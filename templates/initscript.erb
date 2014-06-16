@@ -1,0 +1,101 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          socat-<%= @name %> 
+# Required-Start:    $local_fs $time $network $named
+# Required-Stop:     $local_fs $time $network $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/stop (socat a multipurpose relay)
+#
+# Description: The socat init script will start/stop socat as specified in /etc/socat/socat.conf
+#              Then log (FATAL,ERROR,WARN,INFO and Notic) in /var/log/socat.log
+### END INIT INFO
+
+NAME=socat-<%= @name %>
+DAEMON=/usr/bin/socat
+SOCAT_DEFAULTS='-d -d -d -lf /var/log/socat-<%= @name %>.log'
+
+. /lib/lsb/init-functions
+. /etc/socat/socat-<%= @name %>.conf
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+
+[ -x $DAEMON ] || exit 0
+
+start_socat() {
+        start-stop-daemon --oknodo --quiet --start \
+                --pidfile /var/run/socat-<%= @name %>.pid \
+                --background --make-pidfile \
+                --exec $DAEMON -- $SOCAT_DEFAULTS $OPTIONS < /dev/null
+}
+
+stop_socat() {
+        start-stop-daemon --oknodo --stop --quiet --pidfile /var/run/socat-<%= @name %>.pid --exec $DAEMON
+        rm -f /var/run/socat-<%= @name %>.pid
+}
+
+start () {
+        start_socat
+        return $?
+}
+
+stop () {
+        for PIDFILE in `ls /var/run/socat-<%= @name %>.pid 2> /dev/null`; do
+                NAME=`echo $PIDFILE | cut -c16-`
+                NAME=${NAME%%.pid}
+                stop_socat
+        done
+}
+
+case "$1" in
+    start)
+	    log_daemon_msg "Starting multipurpose relay" "socat-<%= @name %>" 
+	    if start ; then
+		    log_end_msg $?
+	    else
+		    log_end_msg $?
+	    fi
+	    ;;
+    stop)
+	    log_daemon_msg "Stopping multipurpose relay" "socat-<%= @name %>"
+            if stop ; then
+                   log_end_msg $?
+	   else
+		   log_end_msg $?
+	   fi
+	   ;;
+    restart)
+	    log_daemon_msg "Restarting multipurpose relay" "socat-<%= @name %>"
+            stop
+            if start ; then
+		    log_end_msg $?
+	    else
+		    log_end_msg $?
+	    fi
+	    ;;
+    reload|force-reload)
+	    log_daemon_msg "Reloading multipurpose relay" "socat-<%= @name %>"
+	    stop
+	    if start ; then
+		    log_end_msg $?
+	    else
+		    log_end_msg $?
+	    fi
+	    ;;
+    status)
+	    PID='/var/run/socat-<%= @name %>.pid'
+	    if [ -f "$PID" ]; then
+		    echo "socat-<%= @name %> is running (PID=`cat $PID`)."
+		    exit 0
+	    else
+		    echo "socat-<%= @name %> is NOT running."
+		    exit 1
+	    fi
+	    ;;
+    *)
+        echo "Usage: /etc/init.d/$NAME {start|stop|restart|reload|force-reload|status}"
+        exit 3
+        ;;
+esac
+
+exit 0
