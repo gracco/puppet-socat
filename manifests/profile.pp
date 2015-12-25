@@ -15,20 +15,9 @@ define socat::profile (
       require => [Package['socat'], File['/etc/socat']]
   }
 
-    file {"/etc/init.d/socat-${name}":
-      ensure  => file,
-      content => template('socat/initscript.erb'),
-      mode    => '0755',
-    }
-
-    service {"socat-${name}":
-      hasrestart => true,
-      hasstatus  => true,
-      require    => File[
-        "/etc/init.d/socat-${name}",
-        "/etc/socat/socat-${name}.conf"
-      ],
-      ensure     => 'running',
-      enable     => true,
-    }
+  service { "socat-${name}":
+    ensure  => running,
+    start   => "/usr/bin/socat -d -d -d -lf /var/log/socat-${name}.log TCP-LISTEN:${port_listen},fork TCP:${address_bind}:${port_bind} &",
+    pattern => "/usr/bin/socat",
+  }
 }
