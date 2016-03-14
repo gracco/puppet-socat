@@ -1,27 +1,23 @@
 define socat::profile (
-	$port_listen,
-	$address_bind,
-	$port_bind,
+  $port_listen,
+  $address_bind,
+  $port_bind,
 ) {
 
-	file {"/etc/socat/socat-${name}.conf":
-    	ensure  => present,
-    	content => template('socat/profile.conf.erb'),
-    	mode    => '0644',
-    	require => Package['socat'],
+  file { '/etc/socat':
+    ensure => "directory",
   }
 
-    file {"/etc/init.d/socat-${name}":
-      ensure  => file,
-      content => template('socat/initscript.erb'),
-      mode    => '0755',
-    }
+  file {"/etc/socat/socat-${name}.conf":
+      ensure  => present,
+      content => template('socat/profile.conf.erb'),
+      mode    => '0644',
+      require => [Package['socat'], File['/etc/socat']]
+  }
 
-    service {"socat-${name}":
-      hasrestart => true,
-      hasstatus  => true,
-      require    => File["/etc/init.d/socat-${name}"],
-      ensure     => 'running',
-      enable     => true,
-    }
+  service { "socat-${name}":
+    ensure  => running,
+    start   => "/usr/bin/socat -d -d -d -lf /var/log/socat-${name}.log TCP-LISTEN:${port_listen},fork TCP:${address_bind}:${port_bind} &",
+    pattern => "/usr/bin/socat",
+  }
 }
